@@ -552,6 +552,36 @@ ul {
     transform: translateY(-3px);
 }
 
+.btn-outline {
+    background: transparent;
+    color: var(--primary);
+    border: 2px solid var(--primary);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-outline::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: var(--gradient-1);
+    transition: left 0.4s ease;
+    z-index: -1;
+}
+
+.btn-outline:hover {
+    color: var(--white);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-outline:hover::before {
+    left: 0;
+}
+
 /* Hero Image */
 .hero-image {
     display: flex;
@@ -1024,6 +1054,172 @@ section {
 }
 
 /* ===============================
+   References Section
+   =============================== */
+.references {
+    padding: var(--spacing-section) 0;
+    background: linear-gradient(135deg, #FAF8F5 0%, #F5F0EB 100%);
+    position: relative;
+}
+
+.references-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: var(--spacing-lg);
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.reference-card {
+    background: var(--white);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    transition: var(--transition);
+    border: 2px solid transparent;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.reference-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: var(--gradient-1);
+    transform: scaleX(0);
+    transition: transform 0.4s ease;
+}
+
+.reference-card:hover {
+    transform: translateY(-10px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary-light);
+}
+
+.reference-card:hover::before {
+    transform: scaleX(1);
+}
+
+.reference-icon {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto var(--spacing-sm);
+    border-radius: 50%;
+    overflow: hidden;
+    border: 4px solid var(--primary-light);
+    box-shadow: var(--shadow-md);
+    transition: var(--transition);
+}
+
+.reference-icon:hover {
+    transform: scale(1.05);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary);
+}
+
+.reference-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+.reference-name {
+    font-size: 1.5rem;
+    color: var(--dark);
+    margin-bottom: var(--spacing-xs);
+    font-family: 'Sora', sans-serif;
+}
+
+.reference-title {
+    font-size: 1.1rem;
+    color: var(--primary);
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.reference-company {
+    font-size: 1rem;
+    color: var(--gray);
+    margin-bottom: var(--spacing-sm);
+    font-weight: 500;
+}
+
+.reference-contact {
+    background: var(--light-gray);
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--spacing-sm);
+}
+
+.reference-contact p {
+    color: var(--gray);
+    font-size: 0.9rem;
+    margin: 0.25rem 0;
+}
+
+.reference-linkedin {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.7rem 1.2rem;
+    background: var(--white);
+    border: 2px solid var(--primary);
+    border-radius: var(--radius-md);
+    color: var(--primary);
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: var(--transition);
+    margin: var(--spacing-sm) 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.reference-linkedin::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: var(--gradient-1);
+    transition: left 0.4s ease;
+    z-index: -1;
+}
+
+.reference-linkedin:hover {
+    color: var(--white);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary-dark);
+}
+
+.reference-linkedin:hover::before {
+    left: 0;
+}
+
+.reference-linkedin svg {
+    transition: transform 0.3s ease;
+}
+
+.reference-linkedin:hover svg {
+    transform: scale(1.1);
+}
+
+.reference-relation {
+    color: var(--medium-dark);
+    font-size: 0.95rem;
+    font-style: italic;
+    padding-top: var(--spacing-sm);
+    border-top: 1px solid var(--light-gray);
+}
+
+/* ===============================
    Contact Section
    =============================== */
 .contact-content {
@@ -1332,6 +1528,19 @@ section {
 
     .shape {
         display: none;
+    }
+
+    .references-grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-md);
+    }
+
+    .reference-card {
+        padding: var(--spacing-md);
+    }
+
+    .reference-icon {
+        font-size: 3rem;
     }
 
     .social-links {

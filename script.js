@@ -60,7 +60,7 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 // Scroll Reveal Animation
 // ===============================
 function reveal() {
-    const reveals = document.querySelectorAll('.about-card, .timeline-item, .skill-category, .contact-card');
+    const reveals = document.querySelectorAll('.about-card, .timeline-item, .skill-category, .reference-card, .contact-card');
 
     reveals.forEach(element => {
         const windowHeight = window.innerHeight;
