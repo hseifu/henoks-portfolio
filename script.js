@@ -1,537 +1,319 @@
-// ===============================
-// Parallax Scrolling Effect
-// ===============================
-function parallaxScroll() {
-    const scrolled = window.pageYOffset;
+const navbar = document.querySelector(".navbar");
+const navToggle = document.querySelector(".nav-toggle");
+const navMenu = document.querySelector(".nav-menu");
+const navLinks = document.querySelectorAll(".nav-link");
+const sections = document.querySelectorAll("section[id]");
+const progress = document.querySelector(".scroll-progress");
 
-    // Parallax for background shapes
-    const shapes = document.querySelectorAll('.shape');
-    shapes.forEach((shape, index) => {
-        const speed = 0.1 + (index * 0.05);
-        const yPos = -(scrolled * speed);
-        shape.style.transform = `translateY(${yPos}px)`;
-    });
-
-    // Parallax for additional layers
-    const parallaxLayers = document.querySelectorAll('.parallax-layer');
-    parallaxLayers.forEach(layer => {
-        const speed = layer.getAttribute('data-speed') || 0.5;
-        const yPos = -(scrolled * speed);
-        layer.style.transform = `translateY(${yPos}px)`;
-    });
-
-    // Parallax for hero section
-    const heroImage = document.querySelector('.hero-image');
-    if (heroImage && scrolled < window.innerHeight) {
-        const parallax = scrolled * 0.5;
-        heroImage.style.transform = `translateY(${parallax}px)`;
-    }
+function closeMenu() {
+  navMenu?.classList.remove("open");
+  navToggle?.classList.remove("open");
+  navToggle?.setAttribute("aria-expanded", "false");
 }
 
-// Use requestAnimationFrame for smooth parallax
-let ticking = false;
-window.addEventListener('scroll', () => {
-    if (!ticking) {
-        window.requestAnimationFrame(() => {
-            parallaxScroll();
-            ticking = false;
-        });
-        ticking = true;
+navToggle?.addEventListener("click", () => {
+  const isOpen = navMenu.classList.toggle("open");
+  navToggle.classList.toggle("open", isOpen);
+  navToggle.setAttribute("aria-expanded", String(isOpen));
+});
+
+navLinks.forEach((link) => {
+  link.addEventListener("click", () => closeMenu());
+});
+
+document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+  anchor.addEventListener("click", (event) => {
+    const href = anchor.getAttribute("href");
+    if (!href || href === "#") return;
+
+    const target = document.querySelector(href);
+    if (!target) return;
+
+    event.preventDefault();
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+});
+
+function onScroll() {
+  const y = window.scrollY;
+  navbar?.classList.toggle("scrolled", y > 24);
+
+  if (progress) {
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = max > 0 ? (y / max) * 100 : 0;
+    progress.style.width = `${ratio}%`;
+  }
+
+  let current = "";
+  sections.forEach((section) => {
+    if (y >= section.offsetTop - 220) {
+      current = section.id;
     }
-});
+  });
 
-// ===============================
-// Smooth Scroll for Navigation Links
-// ===============================
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function (e) {
-        e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
-        if (target) {
-            target.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
-            });
-        }
-    });
-});
-
-// ===============================
-// Scroll Reveal Animation
-// ===============================
-function reveal() {
-    const reveals = document.querySelectorAll('.about-card, .timeline-item, .skill-category, .reference-card, .contact-card');
-
-    reveals.forEach(element => {
-        const windowHeight = window.innerHeight;
-        const elementTop = element.getBoundingClientRect().top;
-        const elementVisible = 150;
-
-        if (elementTop < windowHeight - elementVisible) {
-            element.classList.add('reveal', 'active');
-        }
-    });
+  navLinks.forEach((link) => {
+    const href = link.getAttribute("href") || "";
+    link.classList.toggle("active", href === `#${current}`);
+  });
 }
 
-window.addEventListener('scroll', reveal);
-reveal(); // Call once on load
+window.addEventListener("scroll", onScroll, { passive: true });
+onScroll();
+
+const revealObserver = new IntersectionObserver(
+  (entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add("visible");
+      revealObserver.unobserve(entry.target);
+    });
+  },
+  { threshold: 0.15, rootMargin: "0px 0px -40px 0px" }
+);
+
+document.querySelectorAll(".reveal").forEach((el, index) => {
+  el.style.transitionDelay = `${Math.min(index % 4, 3) * 80}ms`;
+  revealObserver.observe(el);
+});
 
 // ===============================
-// Navbar Background on Scroll
+// Cursor + Verlet rope
 // ===============================
-const navbar = document.querySelector('.navbar');
-let lastScroll = 0;
+(function initInteractiveFx() {
+  const prefersReducedMotion = window.matchMedia(
+    "(prefers-reduced-motion: reduce)"
+  ).matches;
+  const canUsePointerFx =
+    !prefersReducedMotion &&
+    window.matchMedia("(pointer: fine)").matches &&
+    window.innerWidth > 900;
 
-window.addEventListener('scroll', () => {
-    const currentScroll = window.pageYOffset;
+  if (!canUsePointerFx) return;
 
-    if (currentScroll > 100) {
-        navbar.style.boxShadow = '0 10px 30px rgba(210, 105, 30, 0.2)';
-    } else {
-        navbar.style.boxShadow = '0 5px 15px rgba(210, 105, 30, 0.15)';
+  function spring(current, target, velocity, stiffness, damping) {
+    const force = (target - current) * stiffness;
+    const nextVelocity = (velocity + force) * damping;
+    return {
+      value: current + nextVelocity,
+      velocity: nextVelocity,
+    };
+  }
+
+  document.documentElement.classList.add("has-cursor-fx");
+
+  const root = document.createElement("div");
+  root.className = "cursor-fx";
+  root.innerHTML = `
+    <div class="cursor-dot"></div>
+    <div class="cursor-ring"></div>
+    <canvas class="cursor-rope" width="1" height="1"></canvas>
+  `;
+  document.body.appendChild(root);
+
+  const dot = root.querySelector(".cursor-dot");
+  const ring = root.querySelector(".cursor-ring");
+  const ropeCanvas = root.querySelector(".cursor-rope");
+  const ctx = ropeCanvas.getContext("2d");
+
+  const mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+  const ringPos = { x: mouse.x, y: mouse.y, vx: 0, vy: 0 };
+
+  const segmentLength = 10;
+  const points = Array.from({ length: 12 }, (_, i) => ({
+    x: mouse.x,
+    y: mouse.y + i * segmentLength,
+    oldX: mouse.x,
+    oldY: mouse.y + i * segmentLength,
+    fixed: i === 0,
+  }));
+
+  let visible = false;
+  let hovering = false;
+  let scale = 1;
+  let scaleVel = 0;
+
+  function resizeRope() {
+    ropeCanvas.width = window.innerWidth * Math.min(devicePixelRatio, 2);
+    ropeCanvas.height = window.innerHeight * Math.min(devicePixelRatio, 2);
+    ropeCanvas.style.width = `${window.innerWidth}px`;
+    ropeCanvas.style.height = `${window.innerHeight}px`;
+    ctx.setTransform(
+      Math.min(devicePixelRatio, 2),
+      0,
+      0,
+      Math.min(devicePixelRatio, 2),
+      0,
+      0
+    );
+  }
+
+  resizeRope();
+  window.addEventListener("resize", resizeRope);
+
+  window.addEventListener(
+    "pointermove",
+    (event) => {
+      mouse.x = event.clientX;
+      mouse.y = event.clientY;
+      if (!visible) {
+        visible = true;
+        root.classList.add("is-visible");
+      }
+    },
+    { passive: true }
+  );
+
+  window.addEventListener("pointerdown", () => root.classList.add("is-down"));
+  window.addEventListener("pointerup", () => root.classList.remove("is-down"));
+  document.documentElement.addEventListener("mouseleave", () => {
+    visible = false;
+    root.classList.remove("is-visible");
+  });
+
+  const interactiveSelector =
+    "a, button, .btn, .nav-link, .contact-row, .reference-card, .skill-group";
+
+  document.querySelectorAll(interactiveSelector).forEach((el) => {
+    el.addEventListener("pointerenter", () => {
+      hovering = true;
+      root.classList.add("is-hover");
+    });
+    el.addEventListener("pointerleave", () => {
+      hovering = false;
+      root.classList.remove("is-hover");
+    });
+  });
+
+  function updateRope() {
+    points[0].x = mouse.x;
+    points[0].y = mouse.y;
+    points[0].oldX = mouse.x;
+    points[0].oldY = mouse.y;
+
+    for (let i = 1; i < points.length; i++) {
+      const p = points[i];
+      const vx = (p.x - p.oldX) * 0.97;
+      const vy = (p.y - p.oldY) * 0.97;
+
+      p.oldX = p.x;
+      p.oldY = p.y;
+      p.x += vx;
+      p.y += vy + 0.6;
+
+      p.x = Math.max(0, Math.min(window.innerWidth, p.x));
+      p.y = Math.max(0, Math.min(window.innerHeight, p.y));
     }
 
-    lastScroll = currentScroll;
-});
+    for (let pass = 0; pass < 3; pass++) {
+      for (let i = 0; i < points.length - 1; i++) {
+        const p1 = points[i];
+        const p2 = points[i + 1];
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        const distance = Math.sqrt(dx * dx + dy * dy) || 1;
+        const difference = segmentLength - distance;
+        const percent = difference / distance / 2;
+        const offsetX = dx * percent;
+        const offsetY = dy * percent;
 
-// ===============================
-// Active Navigation Link Highlighting
-// ===============================
-const sections = document.querySelectorAll('section');
-const navLinks = document.querySelectorAll('.nav-link');
-
-window.addEventListener('scroll', () => {
-    let current = '';
-
-    sections.forEach(section => {
-        const sectionTop = section.offsetTop;
-        const sectionHeight = section.clientHeight;
-
-        if (pageYOffset >= sectionTop - 200) {
-            current = section.getAttribute('id');
+        if (!p1.fixed) {
+          p1.x -= offsetX;
+          p1.y -= offsetY;
         }
-    });
-
-    navLinks.forEach(link => {
-        link.style.color = '';
-        if (link.getAttribute('href').substring(1) === current) {
-            link.style.color = 'var(--primary)';
+        if (!p2.fixed) {
+          p2.x += offsetX;
+          p2.y += offsetY;
         }
-    });
-});
+      }
+    }
+  }
 
-// ===============================
-// Physics-Based Rope/String Cursor Effect
-// ===============================
-if (window.innerWidth > 768) {
-    class RopePoint {
-        constructor(x, y, isFixed = false) {
-            this.x = x;
-            this.y = y;
-            this.oldX = x;
-            this.oldY = y;
-            this.isFixed = isFixed;
-            this.radius = 3;
-        }
+  function drawRope() {
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    if (!visible) return;
 
-        update() {
-            if (this.isFixed) return;
+    const head = points[0];
+    const tail = points[points.length - 1];
 
-            const velocityX = this.x - this.oldX;
-            const velocityY = this.y - this.oldY;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.lineWidth = hovering ? 2.8 : 2.5;
+    ctx.shadowColor = "rgba(31, 107, 90, 0.35)";
+    ctx.shadowBlur = 8;
 
-            this.oldX = this.x;
-            this.oldY = this.y;
+    const gradient = ctx.createLinearGradient(head.x, head.y, tail.x, tail.y);
+    gradient.addColorStop(0, "#1f6b5a");
+    gradient.addColorStop(0.5, "#7db89f");
+    gradient.addColorStop(1, "#13463b");
+    ctx.strokeStyle = gradient;
 
-            // Apply velocity with damping
-            this.x += velocityX * 0.97;
-            this.y += velocityY * 0.97;
+    ctx.beginPath();
+    ctx.moveTo(head.x, head.y);
+    for (let i = 1; i < points.length; i++) {
+      ctx.lineTo(points[i].x, points[i].y);
+    }
+    ctx.stroke();
 
-            // Apply gravity (medium strength for medium length string)
-            this.y += 0.6;
-        }
-
-        constrain(maxX, maxY) {
-            if (this.x < 0) this.x = 0;
-            if (this.x > maxX) this.x = maxX;
-            if (this.y < 0) this.y = 0;
-            if (this.y > maxY) this.y = maxY;
-        }
+    ctx.shadowBlur = 5;
+    for (let i = 0; i < points.length; i += 4) {
+      const point = points[i];
+      const beadSize = i === points.length - 1 ? 5 : 3.5;
+      const bead = ctx.createRadialGradient(
+        point.x,
+        point.y,
+        0,
+        point.x,
+        point.y,
+        beadSize
+      );
+      bead.addColorStop(0, "#c9f0a8");
+      bead.addColorStop(0.6, "#1f6b5a");
+      bead.addColorStop(1, "#13463b");
+      ctx.fillStyle = bead;
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, beadSize, 0, Math.PI * 2);
+      ctx.fill();
     }
 
-    class Rope {
-        constructor(x, y, segments = 20, segmentLength = 15) {
-            this.points = [];
-            this.segmentLength = segmentLength;
-            this.canvas = document.createElement('canvas');
-            this.ctx = this.canvas.getContext('2d');
+    ctx.shadowBlur = 7;
+    const end = ctx.createRadialGradient(tail.x, tail.y, 0, tail.x, tail.y, 6);
+    end.addColorStop(0, "#c9f0a8");
+    end.addColorStop(0.5, "#1f6b5a");
+    end.addColorStop(1, "#13463b");
+    ctx.fillStyle = end;
+    ctx.beginPath();
+    ctx.arc(tail.x, tail.y, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
 
-            // Setup canvas
-            this.canvas.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                pointer-events: none;
-                z-index: 9999;
-            `;
-            this.canvas.width = window.innerWidth;
-            this.canvas.height = window.innerHeight;
-            document.body.appendChild(this.canvas);
+  function tick() {
+    requestAnimationFrame(tick);
 
-            // Create rope points
-            for (let i = 0; i < segments; i++) {
-                const point = new RopePoint(
-                    x,
-                    y + i * segmentLength,
-                    i === 0 // First point is fixed to cursor
-                );
-                this.points.push(point);
-            }
+    const ringSpringX = spring(ringPos.x, mouse.x, ringPos.vx, 0.18, 0.72);
+    const ringSpringY = spring(ringPos.y, mouse.y, ringPos.vy, 0.18, 0.72);
+    ringPos.x = ringSpringX.value;
+    ringPos.y = ringSpringY.value;
+    ringPos.vx = ringSpringX.velocity;
+    ringPos.vy = ringSpringY.velocity;
 
-            this.mouseX = x;
-            this.mouseY = y;
-            this.lastMouseMoveTime = Date.now();
-        }
+    const targetScale = hovering ? 1.85 : 1;
+    const scaleSpring = spring(scale, targetScale, scaleVel, 0.16, 0.7);
+    scale = scaleSpring.value;
+    scaleVel = scaleSpring.velocity;
 
-        updateMousePosition(x, y) {
-            this.mouseX = x;
-            this.mouseY = y;
-            this.lastMouseMoveTime = Date.now();
-        }
+    dot.style.transform = `translate3d(${mouse.x}px, ${mouse.y}px, 0)`;
+    ring.style.transform = `translate3d(${ringPos.x}px, ${ringPos.y}px, 0) scale(${scale})`;
 
-        update() {
-            // Update first point to follow cursor
-            this.points[0].x = this.mouseX;
-            this.points[0].y = this.mouseY;
+    updateRope();
+    drawRope();
+  }
 
-            // Update all points
-            for (let point of this.points) {
-                point.update();
-                point.constrain(this.canvas.width, this.canvas.height);
-            }
+  tick();
+})();
 
-            // Apply distance constraints (Verlet integration)
-            for (let i = 0; i < 3; i++) { // Multiple iterations for stability
-                for (let j = 0; j < this.points.length - 1; j++) {
-                    const p1 = this.points[j];
-                    const p2 = this.points[j + 1];
-
-                    const dx = p2.x - p1.x;
-                    const dy = p2.y - p1.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    const difference = this.segmentLength - distance;
-                    const percent = difference / distance / 2;
-
-                    const offsetX = dx * percent;
-                    const offsetY = dy * percent;
-
-                    if (!p1.isFixed) {
-                        p1.x -= offsetX;
-                        p1.y -= offsetY;
-                    }
-                    if (!p2.isFixed) {
-                        p2.x += offsetX;
-                        p2.y += offsetY;
-                    }
-                }
-            }
-        }
-
-        draw() {
-            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
-            // Draw rope segments
-            this.ctx.strokeStyle = '#D2691E';
-            this.ctx.lineWidth = 2.5;
-            this.ctx.lineCap = 'round';
-            this.ctx.lineJoin = 'round';
-
-            // Create gradient for rope
-            const gradient = this.ctx.createLinearGradient(
-                this.points[0].x,
-                this.points[0].y,
-                this.points[this.points.length - 1].x,
-                this.points[this.points.length - 1].y
-            );
-            gradient.addColorStop(0, '#D2691E');
-            gradient.addColorStop(0.5, '#8B4513');
-            gradient.addColorStop(1, '#654321');
-
-            this.ctx.strokeStyle = gradient;
-            this.ctx.shadowColor = 'rgba(210, 105, 30, 0.4)';
-            this.ctx.shadowBlur = 8;
-
-            this.ctx.beginPath();
-            this.ctx.moveTo(this.points[0].x, this.points[0].y);
-
-            for (let i = 1; i < this.points.length; i++) {
-                this.ctx.lineTo(this.points[i].x, this.points[i].y);
-            }
-            this.ctx.stroke();
-
-            // Draw decorative beads along the string
-            this.ctx.shadowBlur = 5;
-            for (let i = 0; i < this.points.length; i += 4) {
-                const point = this.points[i];
-                const beadSize = i === this.points.length - 1 ? 5 : 3.5;
-                const beadGradient = this.ctx.createRadialGradient(
-                    point.x, point.y, 0,
-                    point.x, point.y, beadSize
-                );
-                beadGradient.addColorStop(0, '#E8833A');
-                beadGradient.addColorStop(0.6, '#D2691E');
-                beadGradient.addColorStop(1, '#8B4513');
-
-                this.ctx.fillStyle = beadGradient;
-                this.ctx.beginPath();
-                this.ctx.arc(point.x, point.y, beadSize, 0, Math.PI * 2);
-                this.ctx.fill();
-            }
-
-            // Draw larger end bead/weight
-            this.ctx.shadowBlur = 7;
-            const lastPoint = this.points[this.points.length - 1];
-            const endBeadGradient = this.ctx.createRadialGradient(
-                lastPoint.x, lastPoint.y, 0,
-                lastPoint.x, lastPoint.y, 6
-            );
-            endBeadGradient.addColorStop(0, '#E8833A');
-            endBeadGradient.addColorStop(0.5, '#D2691E');
-            endBeadGradient.addColorStop(1, '#8B4513');
-
-            this.ctx.fillStyle = endBeadGradient;
-            this.ctx.beginPath();
-            this.ctx.arc(lastPoint.x, lastPoint.y, 6, 0, Math.PI * 2);
-            this.ctx.fill();
-        }
-
-        resize() {
-            this.canvas.width = window.innerWidth;
-            this.canvas.height = window.innerHeight;
-        }
-    }
-
-    // Initialize rope - medium length, about half the original
-    const rope = new Rope(window.innerWidth / 2, 100, 12, 10);
-
-    // Update mouse position
-    window.addEventListener('mousemove', (e) => {
-        rope.updateMousePosition(e.clientX, e.clientY);
-    });
-
-    // Handle window resize
-    window.addEventListener('resize', () => {
-        rope.resize();
-    });
-
-    // Animation loop
-    function animateRope() {
-        rope.update();
-        rope.draw();
-        requestAnimationFrame(animateRope);
-    }
-
-    animateRope();
-}
-
-// ===============================
-// Typewriter Effect for Hero Title
-// ===============================
-function typeWriter() {
-    const subtitle = document.querySelector('.hero-subtitle');
-    if (!subtitle) return;
-
-    const text = subtitle.textContent;
-    subtitle.textContent = '';
-    subtitle.style.opacity = '1';
-    let i = 0;
-
-    function type() {
-        if (i < text.length) {
-            subtitle.textContent += text.charAt(i);
-            i++;
-            setTimeout(type, 50);
-        }
-    }
-
-    setTimeout(type, 1000);
-}
-
-// Uncomment to enable typewriter effect
-// window.addEventListener('load', typeWriter);
-
-// ===============================
-// Skill Tags Interaction
-// ===============================
-const skillTags = document.querySelectorAll('.skill-tag');
-
-skillTags.forEach(tag => {
-    tag.addEventListener('mouseenter', function() {
-        this.style.transform = 'translateY(-5px) rotate(3deg)';
-    });
-
-    tag.addEventListener('mouseleave', function() {
-        this.style.transform = 'translateY(0) rotate(0deg)';
-    });
-});
-
-// ===============================
-// Timeline Items Animation Enhancement
-// ===============================
-const timelineItems = document.querySelectorAll('.timeline-item');
-
-const observerOptions = {
-    threshold: 0.2,
-    rootMargin: '0px 0px -100px 0px'
-};
-
-const observer = new IntersectionObserver((entries) => {
-    entries.forEach((entry, index) => {
-        if (entry.isIntersecting) {
-            setTimeout(() => {
-                entry.target.style.opacity = '1';
-                entry.target.style.transform = 'translateX(0)';
-            }, index * 200);
-            observer.unobserve(entry.target);
-        }
-    });
-}, observerOptions);
-
-timelineItems.forEach(item => {
-    item.style.opacity = '0';
-    item.style.transform = 'translateX(-50px)';
-    item.style.transition = 'all 0.6s ease';
-    observer.observe(item);
-});
-
-// ===============================
-// About Cards Stagger Animation
-// ===============================
-const aboutCards = document.querySelectorAll('.about-card');
-
-aboutCards.forEach((card, index) => {
-    card.style.opacity = '0';
-    card.style.transform = 'translateY(30px)';
-    card.style.transition = `all 0.6s ease ${index * 0.2}s`;
-});
-
-const cardObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            entry.target.style.opacity = '1';
-            entry.target.style.transform = 'translateY(0)';
-            cardObserver.unobserve(entry.target);
-        }
-    });
-}, { threshold: 0.3 });
-
-aboutCards.forEach(card => cardObserver.observe(card));
-
-// ===============================
-// Contact Cards Hover Effect
-// ===============================
-const contactCards = document.querySelectorAll('.contact-card');
-
-contactCards.forEach(card => {
-    card.addEventListener('mouseenter', function() {
-        const icon = this.querySelector('.contact-icon');
-        if (icon) {
-            icon.style.transform = 'scale(1.2) rotate(10deg)';
-            icon.style.transition = 'transform 0.3s ease';
-        }
-    });
-
-    card.addEventListener('mouseleave', function() {
-        const icon = this.querySelector('.contact-icon');
-        if (icon) {
-            icon.style.transform = 'scale(1) rotate(0deg)';
-        }
-    });
-});
-
-// ===============================
-// Loading Animation
-// ===============================
-window.addEventListener('load', () => {
-    document.body.style.opacity = '0';
-    document.body.style.transition = 'opacity 0.5s ease';
-
-    setTimeout(() => {
-        document.body.style.opacity = '1';
-    }, 100);
-});
-
-// ===============================
-// Button Ripple Effect
-// ===============================
-const buttons = document.querySelectorAll('.btn');
-
-buttons.forEach(button => {
-    button.addEventListener('click', function(e) {
-        const ripple = document.createElement('span');
-        const rect = this.getBoundingClientRect();
-        const size = Math.max(rect.width, rect.height);
-        const x = e.clientX - rect.left - size / 2;
-        const y = e.clientY - rect.top - size / 2;
-
-        ripple.style.cssText = `
-            position: absolute;
-            width: ${size}px;
-            height: ${size}px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.6);
-            left: ${x}px;
-            top: ${y}px;
-            transform: scale(0);
-            animation: ripple 0.6s ease-out;
-            pointer-events: none;
-        `;
-
-        this.style.position = 'relative';
-        this.style.overflow = 'hidden';
-        this.appendChild(ripple);
-
-        setTimeout(() => ripple.remove(), 600);
-    });
-});
-
-// Add ripple animation to CSS dynamically
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes ripple {
-        to {
-            transform: scale(4);
-            opacity: 0;
-        }
-    }
-`;
-document.head.appendChild(style);
-
-// ===============================
-// Scroll Progress Indicator
-// ===============================
-const scrollProgress = document.createElement('div');
-scrollProgress.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 4px;
-    background: linear-gradient(90deg, #D2691E, #8B4513);
-    z-index: 10000;
-    transition: width 0.1s ease;
-    border-radius: 0 10px 10px 0;
-`;
-document.body.appendChild(scrollProgress);
-
-window.addEventListener('scroll', () => {
-    const windowHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-    const scrolled = (window.scrollY / windowHeight) * 100;
-    scrollProgress.style.width = scrolled + '%';
-});
-
-// ===============================
-// Console Easter Egg
-// ===============================
-console.log('%c👋 Hello there!', 'color: #D2691E; font-size: 24px; font-weight: bold;');
-console.log('%cLooking to get in touch? Email me at henokhailu37@gmail.com', 'color: #8B4513; font-size: 14px;');
-console.log('%c✨ This portfolio was built with HTML, CSS, and vanilla JavaScript', 'color: #CD853F; font-size: 12px;');
+console.log(
+  "%cHenok Seifu",
+  "color:#1f6b5a;font-size:18px;font-weight:700;font-family:Syne,sans-serif;"
+);
+console.log("henokhailu37@gmail.com");
