@@ -171,7 +171,7 @@ document.querySelectorAll(".reveal").forEach((el, index) => {
   });
 
   const interactiveSelector =
-    "a, button, .btn, .nav-link, .contact-row, .reference-card, .skill-group";
+    "a, button, .btn, .nav-link, .contact-row, .reference-card, .skill-group, .project-card";
 
   document.querySelectorAll(interactiveSelector).forEach((el) => {
     el.addEventListener("pointerenter", () => {

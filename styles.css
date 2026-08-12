@@ -699,6 +699,123 @@ section {
   color: var(--muted);
 }
 
+/* Projects */
+.projects {
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(31, 107, 90, 0.035),
+    transparent
+  );
+}
+
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+}
+
+.project-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.6rem 1.65rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  transition: border-color 0.25s var(--ease), transform 0.25s var(--ease);
+}
+
+.project-card:hover {
+  border-color: rgba(31, 107, 90, 0.35);
+  transform: translateY(-3px);
+}
+
+.project-top {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.project-status {
+  width: fit-content;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+}
+
+.project-status.is-progress {
+  color: #7a5a12;
+  background: #f4e7c2;
+}
+
+.project-status.is-live {
+  color: var(--accent-deep);
+  background: var(--accent-soft);
+}
+
+.project-name {
+  font-size: clamp(1.6rem, 3vw, 2rem);
+}
+
+.project-tagline {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.project-copy {
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+.project-points {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.project-points li {
+  position: relative;
+  padding-left: 1rem;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+
+.project-points li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.7em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.project-tech {
+  margin-top: auto;
+  padding-top: 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.project-link {
+  width: fit-content;
+  font-weight: 700;
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 0.22em;
+}
+
+.project-link:hover {
+  color: var(--accent-deep);
+}
+
 /* Skills */
 .skills-grid {
   display: grid;
@@ -907,7 +1024,8 @@ a.contact-row:hover {
   .timeline-item,
   .contact-panel,
   .references-grid,
-  .skills-grid {
+  .skills-grid,
+  .projects-grid {
     grid-template-columns: 1fr;
   }
 
